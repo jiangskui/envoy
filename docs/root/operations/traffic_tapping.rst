@@ -1,11 +1,13 @@
-.. _operations_traffic_capture:
+.. _operations_traffic_tapping:
 
-Traffic capture
+Traffic tapping
 ===============
+
+fixfix HTTP tapping
 
 Envoy currently provides an experimental :ref:`transport socket extension
 <envoy_api_msg_core.TransportSocket>` that can intercept traffic and write to a :ref:`protobuf
-capture file <envoy_api_msg_data.tap.v2alpha.Trace>`.
+trace file <envoy_api_msg_data.tap.v2alpha.Trace>`.
 
 .. warning::
   This feature is experimental and has a known limitation that it will OOM for large traces on a
@@ -15,22 +17,22 @@ capture file <envoy_api_msg_data.tap.v2alpha.Trace>`.
 Configuration
 -------------
 
-Capture can be configured on :ref:`Listener
+Tapping can be configured on :ref:`Listener
 <envoy_api_field_listener.FilterChain.transport_socket>` and :ref:`Cluster
 <envoy_api_field_Cluster.transport_socket>` transport sockets, providing the ability to interpose on
 downstream and upstream L4 connections respectively.
 
-To configure traffic capture, add an `envoy.transport_sockets.capture` transport socket
-:ref:`configuration <envoy_api_msg_config.transport_socket.capture.v2alpha.Capture>` to the listener
+To configure traffic tapping, add an `envoy.transport_sockets.tap` transport socket
+:ref:`configuration <envoy_api_msg_config.transport_socket.tap.v2alpha.Tap>` to the listener
 or cluster. For a plain text socket this might look like:
 
 .. code-block:: yaml
 
   transport_socket:
-    name: envoy.transport_sockets.capture
+    name: envoy.transport_sockets.tap
     config:
       file_sink:
-        path_prefix: /some/capture/path
+        path_prefix: /some/tap/path
       transport_socket:
         name: raw_buffer
 
@@ -39,10 +41,10 @@ For a TLS socket, this will be:
 .. code-block:: yaml
 
   transport_socket:
-    name: envoy.transport_sockets.capture
+    name: envoy.transport_sockets.tap
     config:
       file_sink:
-        path_prefix: /some/capture/path
+        path_prefix: /some/tap/path
       transport_socket:
         name: ssl
         config: <TLS context>
@@ -53,7 +55,7 @@ where the TLS context configuration replaces any existing :ref:`downstream
 TLS configuration on the listener or cluster, respectively.
 
 Each unique socket instance will generate a trace file prefixed with `path_prefix`. E.g.
-`/some/capture/path_0.pb`.
+`/some/tap/path_0.pb`.
 
 PCAP generation
 ---------------
@@ -61,11 +63,11 @@ PCAP generation
 The generated trace file can be converted to `libpcap format
 <https://wiki.wireshark.org/Development/LibpcapFileFormat>`_, suitable for
 analysis with tools such as `Wireshark <https://www.wireshark.org/>`_ with the
-`capture2pcap` utility, e.g.:
+`tap2pcap` utility, e.g.:
 
 .. code-block:: bash
 
-  bazel run @envoy_api//tools:capture2pcap /some/capture/path_0.pb path_0.pcap
+  bazel run @envoy_api//tools:tap2pcap /some/tap/path_0.pb path_0.pcap
   tshark -r path_0.pcap -d "tcp.port==10000,http2" -P
     1   0.000000    127.0.0.1 → 127.0.0.1    HTTP2 157 Magic, SETTINGS, WINDOW_UPDATE, HEADERS
     2   0.013713    127.0.0.1 → 127.0.0.1    HTTP2 91 SETTINGS, SETTINGS, WINDOW_UPDATE
